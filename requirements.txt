@@ -1,8 +1,10 @@
+fastapi
+uvicorn
 langchain
+langchain-ollama
 langchain-community
 langchain-huggingface
-sentence-transformers
-faiss-cpu
-requests
-tqdm
 python-dotenv
+symspellpy
+pdfplumber
+faiss-cpu

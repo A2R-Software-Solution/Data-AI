@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RAG Chatbot</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      max-width: 800px;
+      margin: auto;
+      background-color: #f9f9f9;
+    }
+    h1 {
+      text-align: center;
+    }
+    textarea {
+      width: 100%;
+      height: 80px;
+      font-size: 1rem;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      resize: vertical;
+    }
+    button {
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .result {
+      margin-top: 2rem;
+      padding: 1rem;
+      background-color: #fff;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .output-section {
+      padding: 1rem;
+      margin-top: 1rem;
+      background-color: #f0f8ff;
+      border: 1px solid #b3d1ff;
+      border-radius: 5px;
+      white-space: pre-wrap;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .sources {
+      margin-top: 1rem;
+    }
+    .sources ul {
+      padding-left: 1.2rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>RAG Chatbot</h1>
+
+  <textarea id="question" placeholder="Ask your question here..."></textarea>
+  <button onclick="askQuestion()">Submit</button>
+
+  <div id="response" class="result" style="display:none;">
+    <h3>Answer:</h3>
+    <div id="answer" class="output-section"></div>
+
+    <div class="sources">
+      <h4>Sources:</h4>
+      <ul id="sourceList"></ul>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "http://127.0.0.1:8000/query";  // Replace with your actual server IP or localhost
+
+    async function askQuestion() {
+      const question = document.getElementById("question").value.trim();
+      if (!question) {
+        alert("Please enter a question.");
+        return;
+      }
+
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question })
+        });
+
+        if (!res.ok) {
+          alert("Error from server.");
+          return;
+        }
+
+        const data = await res.json();
+        document.getElementById("response").style.display = "block";
+        document.getElementById("answer").textContent = data.answer || "No answer received.";
+
+        const sourceList = document.getElementById("sourceList");
+        sourceList.innerHTML = "";
+        (data.sources || []).forEach((src, i) => {
+          const item = document.createElement("li");
+          item.textContent = `File: ${src.file_name} | Page: ${src.page_number} | Chunk: ${src.chunk_index}`;
+          sourceList.appendChild(item);
+        });
+      } catch (err) {
+        alert("Failed to reach server. Make sure it's running.");
+        console.error(err);
+      }
+    }
+  </script>
+</body>
+</html>
