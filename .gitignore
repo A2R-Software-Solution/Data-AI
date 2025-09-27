@@ -1,0 +1,119 @@
+# ===========================================
+# A2R RAG API - Git Ignore Configuration
+# ===========================================
+
+# Environment Variables & Secrets
+.env
+env.txt
+*.env
+.env.local
+.env.production
+
+# Data & Documents (should not be in git)
+data/
+*.pdf
+*.docx
+*.doc
+chunks.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+venv/
+ENV/
+env/
+.venv/
+.ENV/
+.env/
+
+# IDEs & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+
+# OS Generated
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+log/
+
+# FastAPI specific
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+
+# Docker
+Dockerfile.prod
+docker-compose.override.yml
+
+# Google Cloud
+.gcloudignore
+service-account-key.json
+*-service-account-key.json
+
+# ML Models (cached models can be large)
+.cache/
+models/
+*.bin
+*.safetensors
+
+# Jupyter Notebooks (if any)
+.ipynb_checkpoints/
+*.ipynb
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Database files (if any local DBs)
+*.db
+*.sqlite
+*.sqlite3
+
+# FAISS indices (old vector store files)
+db/
+*.faiss
+*.pkl
+
+# Old files from previous version
+frontend/
+static/

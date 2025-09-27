@@ -1,0 +1,65 @@
+# ===========================================
+# A2R RAG API - Production Dockerfile
+# ===========================================
+# Multi-stage build for smaller production image
+
+# --- Build Stage ---
+FROM python:3.11-slim AS builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and create wheels
+COPY requirements.txt .
+RUN pip install --upgrade pip && \
+    pip wheel --no-cache-dir --no-deps -r requirements.txt -w /wheels
+
+# --- Production Stage ---
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PORT=8080 \
+    PYTHONPATH=/app
+
+# Install runtime dependencies and tini for proper signal handling
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    tini \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python packages from wheels
+COPY --from=builder /wheels /wheels
+RUN pip install --no-cache /wheels/* && rm -rf /wheels
+
+# Create non-root user for security
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Copy application code
+COPY app/ app/
+
+# Copy SymSpell dictionary (required for spell checking)
+COPY frequency_dictionary_en_82_765.txt /app/
+
+# Change ownership to non-root user
+RUN chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Health check using curl (much lighter than Python + requests)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8080/healthz || exit 1
+
+# Use tini for proper signal handling in containers
+ENTRYPOINT ["/usr/bin/tini", "--"]
+
+# Start the application
+CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
