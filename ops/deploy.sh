@@ -1,14 +1,14 @@
 #!/bin/bash
 # ===========================================
 # A2R RAG API - Manual Deployment Script
+# Updated for us-east4 region
 # ===========================================
-# Use this for manual deployments or troubleshooting
 
 set -e  # Exit on any error
 
 # Configuration
-PROJECT_ID=${GOOGLE_CLOUD_PROJECT:-"your-project-id"}
-REGION="us-central1"
+PROJECT_ID="a2r-ragbot"
+REGION="us-east4"
 SERVICE_NAME="rag-api"
 REPOSITORY="rag-repo"
 IMAGE_TAG=$(git rev-parse --short HEAD)
@@ -40,22 +40,24 @@ gcloud run deploy $SERVICE_NAME \
   --image=$REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$SERVICE_NAME:$IMAGE_TAG \
   --region=$REGION \
   --service-account=rag-api-sa@$PROJECT_ID.iam.gserviceaccount.com \
-  --vpc-connector=rag-conn \
+  --vpc-connector=rag-connector \
   --vpc-egress=all-traffic \
   --min-instances=1 \
   --max-instances=20 \
   --cpu=2 \
-  --memory=2Gi \
+  --memory=4Gi \
   --timeout=300 \
   --concurrency=80 \
   --set-secrets=MONGO_URI=MONGO_URI:latest \
+  --set-secrets=LANGCHAIN_API_KEY=LANGSMITH_API_KEY:latest \
   --set-env-vars=MONGO_DB=rag_db,MONGO_COLLECTION=documents,VECTOR_INDEX=rag-chatbot-index \
   --set-env-vars=EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2 \
-  --set-env-vars=OLLAMA_BASE_URL=http://ollama-runner.internal:11434,OLLAMA_MODEL=mistral \
+  --set-env-vars=OLLAMA_BASE_URL=http://localhost:11434,OLLAMA_MODEL=mistral \
   --set-env-vars=LANGCHAIN_TRACING_V2=true,LANGCHAIN_PROJECT=A2R-RAG \
   --set-env-vars=LOG_LEVEL=INFO,API_VERSION=1.0.0,ENVIRONMENT=production \
   --ingress=internal-and-cloud-load-balancing \
-  --no-allow-unauthenticated
+  --allow-unauthenticated \
+  --port=8080
 
 # Get the service URL
 SERVICE_URL=$(gcloud run services describe $SERVICE_NAME --region=$REGION --format='value(status.url)')

@@ -29,6 +29,8 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting A2R RAG API", extra={
         "version": settings.API_VERSION,
+        "environment": settings.ENVIRONMENT,
+        "region": "us-east4",
         "mongo_db": settings.MONGO_DB,
         "ollama_model": settings.OLLAMA_MODEL
     })
@@ -50,7 +52,7 @@ async def lifespan(app: FastAPI):
             logger.error("Retriever service unhealthy on startup", extra=retriever_status)
         
         if llm_status.get("status") != "healthy":
-            logger.error("LLM service unhealthy on startup", extra=llm_status)
+            logger.warning("LLM service unhealthy on startup", extra=llm_status)
             
     except Exception as e:
         logger.error("Failed to check services on startup", extra={
@@ -79,22 +81,16 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.API_TITLE,
         version=settings.API_VERSION,
-        description="Production RAG API for A2R Software Solutions",
-        docs_url="/docs" if os.getenv("ENVIRONMENT") != "production" else None,
-        redoc_url="/redoc" if os.getenv("ENVIRONMENT") != "production" else None,
+        description="Production RAG API for A2R Software Solutions - us-east4 deployment",
+        docs_url="/docs" if settings.ENVIRONMENT != "production" else None,
+        redoc_url="/redoc" if settings.ENVIRONMENT != "production" else None,
         lifespan=lifespan
     )
     
     # Security Middleware - Trusted Hosts
     app.add_middleware(
         TrustedHostMiddleware,
-        allowed_hosts=[
-            "www.a2rsoftwaresolution.com",
-            "a2rsoftwaresolution.com",
-            "*.run.app",  # Cloud Run domains
-            "localhost",   # For local testing
-            "127.0.0.1"    # For local testing
-        ]
+        allowed_hosts=settings.TRUSTED_HOSTS
     )
     
     # CORS Middleware - Production Security
@@ -109,7 +105,8 @@ def create_app() -> FastAPI:
             "Content-Language",
             "Content-Type",
             "Authorization",
-            "X-Request-ID"
+            "X-Request-ID",
+            "X-API-Key"
         ],
         max_age=600  # Cache preflight for 10 minutes
     )
@@ -126,7 +123,8 @@ def create_app() -> FastAPI:
             "url": str(request.url),
             "user_agent": request.headers.get("user-agent"),
             "request_id": request_id,
-            "client_ip": request.client.host if request.client else None
+            "client_ip": request.client.host if request.client else None,
+            "region": "us-east4"
         })
         
         # Process request
@@ -146,6 +144,8 @@ def create_app() -> FastAPI:
             # Add custom headers
             response.headers["X-Request-ID"] = request_id
             response.headers["X-Processing-Time"] = str(round(processing_time * 1000, 2))
+            response.headers["X-Region"] = "us-east4"
+            response.headers["X-Service"] = "a2r-rag-api"
             
             return response
             
@@ -170,7 +170,10 @@ def create_app() -> FastAPI:
                     "request_id": request_id,
                     "error_type": type(e).__name__
                 },
-                headers={"X-Request-ID": request_id}
+                headers={
+                    "X-Request-ID": request_id,
+                    "X-Region": "us-east4"
+                }
             )
     
     # Global exception handler
@@ -192,9 +195,13 @@ def create_app() -> FastAPI:
             content={
                 "detail": "An unexpected error occurred",
                 "request_id": request_id,
-                "error_type": type(exc).__name__
+                "error_type": type(exc).__name__,
+                "region": "us-east4"
             },
-            headers={"X-Request-ID": request_id}
+            headers={
+                "X-Request-ID": request_id,
+                "X-Region": "us-east4"
+            }
         )
     
     # Include routers
@@ -209,7 +216,11 @@ def create_app() -> FastAPI:
             "service": "A2R RAG API",
             "version": settings.API_VERSION,
             "status": "running",
-            "docs_url": "/docs" if os.getenv("ENVIRONMENT") != "production" else None
+            "region": "us-east4",
+            "environment": settings.ENVIRONMENT,
+            "docs_url": "/docs" if settings.ENVIRONMENT != "production" else None,
+            "mongodb_connected": bool(settings.MONGO_URI),
+            "langsmith_enabled": bool(settings.LANGCHAIN_API_KEY)
         }
     
     return app
@@ -225,7 +236,8 @@ if __name__ == "__main__":
     
     logger.info("Starting uvicorn server", extra={
         "host": "0.0.0.0",
-        "port": port
+        "port": port,
+        "region": "us-east4"
     })
     
     uvicorn.run(
