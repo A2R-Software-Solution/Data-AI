@@ -1,6 +1,6 @@
 # ===========================================
 # A2R RAG API - Cloud Build Configuration
-# Updated for us-east4 region and proper secrets
+# Fixed for proper variable substitution
 # ===========================================
 
 steps:
@@ -8,8 +8,6 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
-      - '-t'
-      - 'us-east4-docker.pkg.dev/$PROJECT_ID/rag-repo/rag-api:$SHORT_SHA'
       - '-t'
       - 'us-east4-docker.pkg.dev/$PROJECT_ID/rag-repo/rag-api:latest'
       - '-f'
@@ -20,8 +18,7 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: 
       - 'push'
-      - '--all-tags'
-      - 'us-east4-docker.pkg.dev/$PROJECT_ID/rag-repo/rag-api'
+      - 'us-east4-docker.pkg.dev/$PROJECT_ID/rag-repo/rag-api:latest'
   
   # Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -30,7 +27,7 @@ steps:
       - 'run'
       - 'deploy'
       - 'rag-api'
-      - '--image=us-east4-docker.pkg.dev/$PROJECT_ID/rag-repo/rag-api:$SHORT_SHA'
+      - '--image=us-east4-docker.pkg.dev/$PROJECT_ID/rag-repo/rag-api:latest'
       - '--region=us-east4'
       - '--service-account=rag-api-sa@$PROJECT_ID.iam.gserviceaccount.com'
       - '--vpc-connector=rag-connector'
@@ -54,7 +51,6 @@ steps:
 
 # Store images in Artifact Registry
 images:
-  - 'us-east4-docker.pkg.dev/$PROJECT_ID/rag-repo/rag-api:$SHORT_SHA'
   - 'us-east4-docker.pkg.dev/$PROJECT_ID/rag-repo/rag-api:latest'
 
 # Build options
