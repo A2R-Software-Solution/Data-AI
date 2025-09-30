@@ -117,3 +117,15 @@ db/
 # Old files from previous version
 frontend/
 static/
+
+#Docker & Deployment
+ops/.env
+ops/certbot/
+monitoring/
+*.tar.gz
+backups/
+
+# SSL Certificates
+*.pem
+*.key
+*.crt
